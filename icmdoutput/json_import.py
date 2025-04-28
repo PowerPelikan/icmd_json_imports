@@ -1,6 +1,7 @@
 import json
 
 def import_data(path):
+    # open json-file and return it    
     with open(path, 'r') as f: 
         data = json.load(f)
         return data
@@ -16,3 +17,14 @@ def show_allkeys(data, parent_key=""):
         for item in data: 
             keys.extend(show_allkeys(item, parent_key))
     return keys
+
+def show_models(data):
+    return list(data['models'].keys())
+
+def show_elements(data, model = ""):
+
+    # take the first model for element getting
+    if model == "":
+        model = show_models(data)[0]
+
+    return data['models'][model]['coords']['component']['data']
