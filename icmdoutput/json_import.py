@@ -3,7 +3,7 @@ import pandas as pd
 
 
 class icmd_data:
-    def __init__(self, path, **kwargs):
+    def __init__(self, path: __path__, **kwargs):
         try:
             self.data = self.import_data(path)
             self.models = self.__get_models()
