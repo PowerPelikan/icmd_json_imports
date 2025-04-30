@@ -1,30 +1,57 @@
 import json
+import pandas as pd
 
-def import_data(path):
-    # open json-file and return it    
-    with open(path, 'r') as f: 
-        data = json.load(f)
-        return data
 
-def show_allkeys(data, parent_key=""):
-    keys = []
-    if isinstance(data, dict):
-        for k, v in data.items():
-            full_key = f"{parent_key}.{k}" if parent_key else k
-            keys.append(full_key)
-            keys.extend(show_allkeys(v, full_key))
-    elif isinstance(data, list):
-        for item in data: 
-            keys.extend(show_allkeys(item, parent_key))
-    return keys
+class icmd_data:
+    def __init__(self, path, **kwargs):
+        try:
+            self.data = self.import_data(path)
+            self.models = self.__get_models()
+            self.elements = self.__get_elements()
+            self.datakeys = self.__get_datakeys_of_models()
+        except: 
+            print("No valid path given")
 
-def show_models(data):
-    return list(data['models'].keys())
+    def __import_data(path):
+        # open json-file and return it    
+        with open(path, 'r') as f: 
+            data = json.load(f)
+            return data
 
-def show_elements(data, model = ""):
+    def __get_models(self):
 
-    # take the first model for element getting
-    if model == "":
-        model = show_models(data)[0]
+        # Return a list of all used models
+        return list(self.data['models'].keys())
 
-    return data['models'][model]['coords']['component']['data']
+
+    def __get_elements(self):
+
+        df = pd.DataFrame()
+        for i in self.models:
+            try:
+                df[f'{i}'] = self.data['models'][i]['coords']['components']['data']
+            except:
+                print('Error in finding model elements')
+
+
+        return df
+
+
+    def __get_datakeys_of_models(self):
+
+        df = pd.DataFrame()
+        # Return calculated model data keys
+        for i in self.models:
+            try: 
+                df[f'{i}'] = self.data['models'][i]['data_vars'].keys()
+            except:
+                print('Error in finding data keys')
+    
+    def get_data(self):
+        return self.data
+
+    def get_elements(self):
+        return self.elements
+    
+    def get_datakeys_of_models(self):
+        return self.datakeys
