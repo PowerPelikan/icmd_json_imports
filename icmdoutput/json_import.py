@@ -5,12 +5,16 @@ import pandas as pd
 class icmd_data:
     def __init__(self, path: __path__, **kwargs):
         try:
-            self.data = self.import_data(path)
+            self.data = self.__import_data(path)
+        except: 
+            print("No valid path given")
+
+        try:
             self.models = self.__get_models()
             self.elements = self.__get_elements()
             self.datakeys = self.__get_datakeys_of_models()
         except: 
-            print("No valid path given")
+            print("Error in loading file data")
 
     def __import_data(path):
         # open json-file and return it    
