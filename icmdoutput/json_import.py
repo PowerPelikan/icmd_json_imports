@@ -1,26 +1,26 @@
+""" providing json-filetype reading, pandas dataframe datastructure """
 import json
 import pandas as pd
 
 
-class icmd_data:
-    def __init__(self, path: __path__, **kwargs):
-        try:
-            self.data = self.__import_data(path)
-        except: 
-            print("No valid path given")
+class IcmdData:
+    """Class to convert json file from icmd data into human readable lists and Dataframes"""
+    def __init__(self, path: str):
+        self.data = self.__import_data(path)
+        self.models = self.__get_models()
+        self.elements = self.__get_elements()
+        self.datakeys = self.__get_datakeys_of_models()
 
-        try:
-            self.models = self.__get_models()
-            self.elements = self.__get_elements()
-            self.datakeys = self.__get_datakeys_of_models()
-        except: 
-            print("Error in loading file data")
+    def __import_data(self, path: str):
+        """ open json-file and return it """
+        with open(path, 'r', encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+            except OSError:
+                print("Cannot open given path")
 
-    def __import_data(path):
-        # open json-file and return it    
-        with open(path, 'r') as f: 
-            data = json.load(f)
             return data
+
 
     def __get_models(self):
 
@@ -34,9 +34,8 @@ class icmd_data:
         for i in self.models:
             try:
                 df[f'{i}'] = self.data['models'][i]['coords']['components']['data']
-            except:
+            except RuntimeError:
                 print('Error in finding model elements')
-
 
         return df
 
@@ -46,16 +45,20 @@ class icmd_data:
         df = pd.DataFrame()
         # Return calculated model data keys
         for i in self.models:
-            try: 
+            try:
                 df[f'{i}'] = self.data['models'][i]['data_vars'].keys()
-            except:
+            except KeyError:
                 print('Error in finding data keys')
-    
-    def get_data(self):
+        return df
+
+    def get_data(self) -> pd.DataFrame:
+        """Function return data as dataframe"""
         return self.data
 
     def get_elements(self):
+        """Funciton return used elements in given data as list"""
         return self.elements
-    
-    def get_datakeys_of_models(self):
+
+    def get_datakeys_of_models(self) -> list:
+        """Function return all datakey in given data as list"""
         return self.datakeys
