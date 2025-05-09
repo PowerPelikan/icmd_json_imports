@@ -1,4 +1,5 @@
 """ providing json-filetype reading, pandas dataframe datastructure """
+import os
 import json
 import pandas as pd
 
@@ -6,6 +7,10 @@ import pandas as pd
 class IcmdData:
     """Class to convert json file from icmd data into human readable lists and Dataframes"""
     def __init__(self, path: str):
+
+        if not os.path.isfile(path):
+            raise ValueError(path + " does not exist")
+
         self.data = self.__import_data(path)
         self.models = self.__get_models()
         self.elements = self.__get_elements()
@@ -33,7 +38,7 @@ class IcmdData:
         df = pd.DataFrame()
         for i in self.models:
             try:
-                df[f'{i}'] = self.data['models'][i]['coords']['components']['data']
+                df[f'{i}'] = self.data['models'][i]['coords']['component']['data']
             except RuntimeError:
                 print('Error in finding model elements')
 
@@ -42,13 +47,15 @@ class IcmdData:
 
     def __get_datakeys_of_models(self):
 
-        df = pd.DataFrame()
         # Return calculated model data keys
+        list_of_data = []
         for i in self.models:
             try:
-                df[f'{i}'] = self.data['models'][i]['data_vars'].keys()
+                list_of_data.append(self.data['models'][i]['data_vars'].keys())
             except KeyError:
                 print('Error in finding data keys')
+        df = pd.DataFrame(list_of_data, index=self.models).T
+
         return df
 
     def get_data(self) -> pd.DataFrame:
