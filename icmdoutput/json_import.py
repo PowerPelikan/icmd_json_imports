@@ -35,12 +35,13 @@ class IcmdData:
 
     def __get_elements(self):
 
-        df = pd.DataFrame()
+        list_of_data = []
         for i in self.models:
             try:
-                df[f'{i}'] = self.data['models'][i]['coords']['component']['data']
+                list_of_data.append(self.data['models'][i]['coords']['component']['data'])
             except RuntimeError:
                 print('Error in finding model elements')
+        df = pd.DataFrame(list_of_data, index=self.models).T
 
         return df
 
