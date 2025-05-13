@@ -19,6 +19,7 @@ class IcmdData:
 
     def __import_data(self, path: str):
         """ open json-file and return it """
+
         with open(path, 'r', encoding="utf-8") as f:
             try:
                 data = json.load(f)
@@ -34,6 +35,7 @@ class IcmdData:
 
 
     def __get_elements(self):
+        """Return a list of all used elements"""
 
         list_of_data = []
         for i in self.models:
@@ -48,7 +50,7 @@ class IcmdData:
 
     def __get_datakeys_of_models(self):
 
-        # Return calculated model data keys
+        """ Return calculated model data keys """
         list_of_data = []
         for i in self.models:
             try:
