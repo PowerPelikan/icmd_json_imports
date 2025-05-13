@@ -58,8 +58,12 @@ class IcmdData:
         df = pd.DataFrame(list_of_data, index=self.models).T
 
         return df
+    
+    def get_model(self):
+        """Function return used models"""
+        return self.models
 
-    def get_data(self) -> pd.DataFrame:
+    def get_data(self):
         """Function return data as dataframe"""
         return self.data
 
@@ -70,3 +74,17 @@ class IcmdData:
     def get_datakeys_of_models(self) -> list:
         """Function return all datakey in given data as list"""
         return self.datakeys
+
+    def is_model(self, model: str):
+        """Function chekcks, if given mdoel in given data"""
+        if model in self.models:
+            return True
+        else:
+            raise ValueError("Model is not in given data")
+
+    def is_datakey(self, datakey: str, *model=""  ):
+        """Function checks if given datakey is in model"""
+        if model: 
+            self.is_model(model)
+
+        if datakey in 

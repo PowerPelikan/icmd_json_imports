@@ -8,6 +8,11 @@ from icmdoutput import json_import
 
 if __name__ == '__main__':
     data1 = json_import.IcmdData('test/testfiles/susair-var_ni_cu.json')
+    print(data1.get_elements())
+    print(data1.get_data())
     print(data1.get_datakeys_of_models())
+
     data2 = json_import.IcmdData('test/testfiles/tesla_tempStep_solidif.json')
+    print(data2.get_datakeys_of_models())
+    print(data2.get_data())
     print(data2.get_datakeys_of_models())
