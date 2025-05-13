@@ -6,6 +6,7 @@ import pandas as pd
 
 class IcmdData:
     """Class to convert json file from icmd data into human readable lists and Dataframes"""
+
     def __init__(self, path: str):
 
         if not os.path.isfile(path):
@@ -58,12 +59,23 @@ class IcmdData:
 
         return df
 
+    def __get_data_from_key(self, datakey: str, model: str):
+        """Function return values under given datakey and model"""
+
+        try:
+            self.is_model(model)
+            self.is_datakey(datakey, model)
+        except ValueError:
+            return False
+
+        return self.data["models"][model]["data_vars"][datakey].values
+
     def get_model(self):
         """Function return used models"""
         return self.models
 
     def get_data(self):
-        """Function return data as dataframe"""
+        """Function return data as loaded json"""
         return self.data
 
     def get_elements(self):
@@ -74,13 +86,13 @@ class IcmdData:
         """Function return all datakey in given data as list"""
         return self.datakeys
 
-    def is_model(self, model: str):
+    def is_model(self, model: str) -> bool:
         """Function chekcks, if given model in given data"""
         if model in self.models:
             return True
         raise ValueError("Model is not in given data")
 
-    def is_datakey(self, datakey: str, *model ):
+    def check_datakeys(self, datakey: str, *model ):
         """Function checks if given datakey is in model"""
 
         if not model:
@@ -90,3 +102,22 @@ class IcmdData:
             self.is_model(m)
             if datakey in self.datakeys[m].values:
                 print(datakey + "is in " + m)
+            else:
+                print("Not in " + m)
+
+    def is_datakey(self, datakey: str, model: str) -> bool:
+        """Function return, if given datakey is in given model"""
+
+        if datakey in self.datakeys[model].values:
+            return True
+        raise ValueError("Datakey is not in given model")
+
+    def get_data_from_keys(self, datakeys: list, model):
+        """Function return values of given datakeys and models in a dataframe"""
+        list_of_data = []
+        for d in datakeys:
+            list_of_data.append(self.__get_data_from_key(d, model).values)
+
+        df = pd.DataFrame(list_of_data, index=datakeys).T
+
+        return df
