@@ -82,9 +82,14 @@ class IcmdData:
         else:
             raise ValueError("Model is not in given data")
 
-    def is_datakey(self, datakey: str, *model=""  ):
+    def is_datakey(self, datakey: str, *model ):
         """Function checks if given datakey is in model"""
-        if model: 
-            self.is_model(model)
 
-        if datakey in 
+        if not model:
+            model = self.models
+
+        for m in model:
+            self.is_model(m)
+            if datakey in self.datakeys[m].values:
+                print(datakey + "is in " + m)
+                    
