@@ -10,13 +10,15 @@ from icmdoutput import json_import
 
 class IcmdDataTest(unittest.TestCase):
     """Testing Class methods"""
-    def get_data_test(self):
-        """Testing get_data with testdata"""
-        data1 = json_import.IcmdData('test/testfiles/susair-var_ni_cu.json')
-        data2 = json_import.IcmdData('test/testfiles/tesla_tempStep.json')
-        print(data1.get_data())
-        print(data2.get_data())
+    def setUp(self):
+        """load testdata"""
+        self.data1 = json_import.jsonData('test/testfiles/susair-var_ni_cu.json')
+        self.data2 = json_import.jsonData('test/testfiles/tesla_tempStep_solidif.json')
 
+    def test_get_model(self):
+        # Testing get_model method
+        self.assertEqual(self.data1.get_model(), ['Equilibrium'], "Not the right models")
+        self.assertEqual(self.data2.get_model(), ['Temperature Step', 'Solidification'], "Not the right models")
 
 
 if __name__ == '__main__':

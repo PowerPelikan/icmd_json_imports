@@ -4,7 +4,7 @@ import json
 import pandas as pd
 
 
-class IcmdData:
+class jsonData:
     """Class to convert json file from icmd data into human readable lists and Dataframes"""
 
     def __init__(self, path: str):
@@ -112,7 +112,7 @@ class IcmdData:
 
         if datakey in self.datakeys[model].values:
             return True
-        raise ValueError("Datakey is not in given model")
+        raise ValueError("Datakey " + datakey + " is not in model " + model)
 
     def get_data_from_keys(self, datakeys: list, model):
         """Function return values of given datakeys and models in a dataframe"""
