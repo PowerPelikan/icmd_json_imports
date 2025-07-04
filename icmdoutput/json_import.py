@@ -4,7 +4,7 @@ import json
 import pandas as pd
 
 
-class jsonData:
+class JsonData:
     """Class to convert json file from icmd data into human readable lists and Dataframes"""
 
     def __init__(self, path: str):
@@ -70,7 +70,7 @@ class jsonData:
         except ValueError:
             return False
 
-        return self.data["models"][model]["data_vars"][datakey].values
+        return self.data["models"][model]["data_vars"][datakey]
 
     def get_model(self):
         """Function return used models"""
@@ -118,7 +118,7 @@ class jsonData:
         """Function return values of given datakeys and models in a dataframe"""
         list_of_data = []
         for d in datakeys:
-            list_of_data.append(self.__get_data_from_key(d, model).values)
+            list_of_data.append(self.__get_data_from_key(d, model))
 
         df = pd.DataFrame(list_of_data, index=datakeys).T
 

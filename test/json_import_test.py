@@ -12,8 +12,8 @@ class IcmdDataTest(unittest.TestCase):
     """Testing Class methods"""
     def setUp(self):
         """load testdata"""
-        self.data1 = json_import.jsonData('test/testfiles/susair-var_ni_cu.json')
-        self.data2 = json_import.jsonData('test/testfiles/tesla_tempStep_solidif.json')
+        self.data1 = json_import.JsonData('test/testfiles/susair-var_ni_cu.json')
+        self.data2 = json_import.JsonData('test/testfiles/tesla_tempStep_solidif.json')
 
     def test_get_model(self):
         # Testing get_model method
