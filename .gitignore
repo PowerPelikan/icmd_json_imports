@@ -176,5 +176,8 @@ cython_debug/
 # Testfiles
 /test/testfiles
 
+/jupyterNotebooks
+/jupyterNotebooks/*
+
 # vs code config
 .vscode
