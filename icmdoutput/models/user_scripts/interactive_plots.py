@@ -1,168 +1,157 @@
-from scipy.spatial import KDTree
 import ipywidgets as widgets
 from IPython.display import display
 import numpy as np
 import plotly.graph_objects as go
 
-def prepare_lookup(grouped_df, comp_cols):
-    comps = []
-    groups = []
-    for comp, g in grouped_df:
-        comps.append(comp)
-        groups.append(g)
-    comp_array = np.array(comps)
-    tree = KDTree(comp_array)
-    return tree, comp_array, groups
+def make_sliders(comp_cols, comp_array):
+    '''Create selection sliders for all components except Al'''
 
+    #Add fallback for big datasets
 
-def get_nearest_group(target, comp_cols, tree, comp_array, groups):
-    # Ziel in Array-Reihenfolge bringen
-    target_arr = np.array([target[c] for c in comp_cols])
-    dist, idx = tree.query(target_arr)
-    return comp_array[idx], groups[idx]
-
-def make_interactive_liquidphase(comp_cols, tree, comp_array, groups, 
-                                  t_col="Temperature in C", liquid_col="LIQUID"):
-    # Wertebereiche für Slider (außer Al)
-    ranges = {c: (comp_array[:, i].min(), comp_array[:, i].max())
-              for i, c in enumerate(comp_cols) if c != "Al"}
-
-    '''sliders = {c: widgets.FloatSlider(
-        value=(ranges[c][0] + ranges[c][1]) / 2,
-        min=ranges[c][0],
-        max=ranges[c][1],
-        step=0.1,
-        description=c,
-        continuous_update=Falsei
-    ) for c in ranges}'''
-
-    # Slider für alle Elemente außer Al
     sliders = {}
     for i, c in enumerate(comp_cols):
         if c == "Al":
             continue
         values = sorted(set(comp_array[:, i]))
         sliders[c] = widgets.SelectionSlider(
-            options=values,
-            value=values[len(values)//2],  # mittlerer Wert als Start
-            description=c,
-            continuous_update=True
+            options = values,
+            value = values[len(values) // 2],
+            description = c,
+            continous_update = True
         )
+    return sliders
 
+def get_data_slice(data_dict, target):
+    '''FInd matching data entry for given composition, handling rounding errors'''
+    # Add Al as the remainder to make total = 100
+    target = {"Al": max(0.0, 100 - sum(target.values())), **target}
+    key = tuple(round(float(i), 3) for i in target.values())
+
+    # Try exactz match
+    if key in data_dict:
+        return data_dict[key], target
+
+    # Otherwise find closest key numerically
+    keys = np.array(list(data_dict.keys()))
+    diffs = np.linalg.norm(keys - np.array(list(key)), axis=1)
+    nearest_key = tuple(keys[np.argmin(diffs)])
+    return data_dict[nearest_key], target
+
+def plot_composition_step(g, comp_cols, target, t_col="Temperature in C", liquid_col="LIQUID"):
+    '''Plot temperature vs phase fracstions'''
+    fig = go.Figure()
+    t = g[t_col]
+    f_liq = np.nan_to_num(g[liquid_col], nan=0.0)
+    fig.add_trace(go.Scatter(x=t, y=f_liq, mode='lines', name='LIQUID', 
+                             line={'color': 'black', 'width': 2}))
+
+    phases = [c for c in g.keys() if c not in {t_col, liquid_col, *comp_cols}]
+    for p in phases:
+        f = np.nan_to_num(g[p], nan=0.0)
+        if f.max() > 0.0001:
+            fig.add_trace(go.Scatter(x=t, y=f, mode='lines', name=p))
+
+    fig.update_layout(
+        xaxis=dict(title='Temperature in °C'),
+        yaxis=dict(title='Phase Fraction in mole', type='log', range=[-4, 0]),
+        template='plotly_white',
+        height=600,
+        width=900,
+        title= "Composition:\n" +
+            ",".join(f"{k}={target[k]:.2f}" for k in comp_cols)
+    )
+
+    config = {
+        "toImageButtonOptions": {
+            "format": "svg",
+            "filename": ", ".join(f"{k}={target[k]:.2f}" for k in comp_cols),
+            "height": 600,
+            "width": 900,
+            "scale": 1
+        }
+    }
+
+    fig.show(config=config)
+
+def plot_composition_scheil(g, comp_cols, target, t_col="Temperature in C", solid_col="SOLID", liquid_col="LIQUID"):
+    '''Plot solid fraction over Temperature'''
+    fig = go.Figure()
+    # Temperature and solid fraction arrays
+    t = g[t_col]
+    f_solid = np.nan_to_num(g[solid_col], nan=0.0)
+    fig.add_trace(go.Scatter(
+        x=f_solid, y=t, mode="lines", name="Solid", line={'color':"black", 'width':2}, showlegend=False
+    ))
+
+    # Nur Marker für das erste Auftreten jeder Phase
+    phases = [c for c in g.keys() if c not in {t_col, solid_col, liquid_col, *comp_cols}]
+    for p in phases:
+        f = np.nan_to_num(g[p], nan=0.0)
+        #print(f)
+        # Skip empty or near-zero phases
+        if np.all(f <= 0):
+            continue
+
+        # Get first valid occurrence
+        threshold = 1e-4
+        onset_candidates = np.where(f[1:] > threshold)[0]
+        if len(onset_candidates) == 0:
+            continue
+        onset_idx = onset_candidates[-1]
+
+        fig.add_trace(go.Scatter(
+            x=[f_solid[onset_idx]],  # Punkt auf Liquidus-Linie
+            y=[t[onset_idx]], 
+            mode="markers+text",
+            marker=dict(size=10, symbol="circle"),
+            text=[p],
+            textposition="top right",
+            name=p,
+            showlegend=False
+        ))
+    fig.update_layout(
+        #xaxis=dict(title="Fraktion", range=[0, 1]),
+        xaxis=dict(title="Fraction of solid"),
+        yaxis=dict(title="Temperatur in °C"),
+        template="plotly_white",
+        height=600,
+        width=900,
+        title= "Composition:\n" +
+            ",".join(f"{k}={target[k]:.2f}" for k in comp_cols),
+
+        legend=dict(y=1, x=0.99)
+    )
+
+    fig.show()
+
+def make_interactive_step(comp_cols, data_dict, t_col="Temperature in C", liquid_col="LIQUID"):
+    """Main function combining sliders, plot, and interactivity."""
+    comp_array = np.array(list(data_dict.keys()))
+    sliders = make_sliders(comp_cols, comp_array)
     out = widgets.Output()
 
-    def plot_update(**kwargs):
+    def update_plot(**kwargs):
         out.clear_output(wait=True)
-        target = {**kwargs}
-        target["Al"] = 100 - sum(target.values())  # anpassen, falls normiert auf 1
-
-        comp, g = get_nearest_group(target, comp_cols, tree, comp_array, groups)
-        g = g.sort_values(t_col, ascending=False)
-
-        fig = go.Figure()
-
-        # Temperatur & Liquidus
-        T = g[t_col].values
-        fL = np.nan_to_num(g[liquid_col].values, nan=0.0)
-        fig.add_trace(go.Scatter(
-            x=T, y=fL, mode="lines", name="LIQUID", line=dict(color="black", width=2)
-        ))
-
-        # Nur Marker für das erste Auftreten jeder Phase
-        phases = [c for c in g.columns if c not in {t_col, liquid_col, *comp_cols}]
-        for p in phases:
-            f = np.nan_to_num(g[p].values, nan=0.0)
-
-            # Erstes Auftreten (>0)
-            onset_idx = np.argmax(f > 0)
-            if f[onset_idx] > 0:
-                fig.add_trace(go.Scatter(
-                    x=[T[onset_idx]], 
-                    y=[fL[onset_idx]],  # Punkt auf Liquidus-Linie
-                    mode="markers+text",
-                    marker=dict(size=10, symbol="circle"),
-                    text=[p],
-                    textposition="top center",
-                    name=p
-                ))
-
-        fig.update_layout(
-            xaxis=dict(title="Temperatur [°C]"),
-            yaxis=dict(title="Fraktion", range=[0, 1]),
-            template="plotly_white",
-            height=600,
-            width=900,
-            title=f"Komposition gewählt:\n" +
-                  ", ".join(f"{k}={target[k]:.2f}" for k in comp_cols),
-            legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02)
-        )
-
+        g, target = get_data_slice(data_dict, kwargs)
         with out:
-            display(fig)
+            plot_composition_step(g, comp_cols, target, t_col, liquid_col)
 
-    # Widgets verknüpfen und Layout darstellen
-    interactive = widgets.interactive_output(plot_update, sliders)
+    interactive = widgets.interactive_output(update_plot, sliders)
     ui = widgets.VBox([*sliders.values(), out])
     display(ui, interactive)
 
-def make_interactive_step(comp_cols, tree, comp_array, groups, 
-                                  t_col="Temperature in C", liquid_col="LIQUID"):
-    ranges = {c: (comp_array[:, i].min(), comp_array[:, i].max())
-              for i, c in enumerate(comp_cols) if c != "Al"}
-
-    # Slider für alle Elemente außer Al
-    sliders = {}
-    for i, c in enumerate(comp_cols):
-        if c == "Al":
-            continue
-        values = sorted(set(comp_array[:, i]))
-        sliders[c] = widgets.SelectionSlider(
-            options=values,
-            value=values[len(values)//2],  # mittlerer Wert als Start
-            description=c,
-            continuous_update=True
-        )
-
+def make_interactive_scheil(comp_cols, data_dict, t_col="Temperature in C", solid_col="SOLID", liquid_col="LIQUID"):
+    """Main function combining sliders, plot, and interactivity."""
+    comp_array = np.array(list(data_dict.keys()))
+    sliders = make_sliders(comp_cols, comp_array)
     out = widgets.Output()
 
-    def plot_update(**kwargs):
+    def update_plot(**kwargs):
         out.clear_output(wait=True)
-        target = {**kwargs}
-        target["Al"] = 100 - sum(target.values())  # anpassen falls normiert auf 1
-
-        # nächste Gruppe suchen
-        comp, g = get_nearest_group(target, comp_cols, tree, comp_array, groups)
-        g = g.sort_values(t_col, ascending=False)
-
-        # Plot erstellen
-        fig = go.Figure()
-        T = g[t_col].values
-        fL = np.nan_to_num(g[liquid_col].values, nan=0.0)
-
-        fig.add_trace(go.Scatter(x=T, y=fL, mode="lines", name="LIQUID", line=dict(color="black", width=2)))
-
-        phases = [c for c in g.columns if c not in {t_col, liquid_col, *comp_cols}]
-        for p in phases:
-            f = np.nan_to_num(g[p].values, nan=0.0)
-            if f.max() > 0.0001:
-                fig.add_trace(go.Scatter(x=T, y=f, mode="lines", name=p))
-
-        fig.update_layout(
-            xaxis=dict(title="Temperatur [°C]"),
-            yaxis=dict(title="Fraktion", type="log", range=[-4, 0]),
-            template="plotly_white",
-            height=600,
-            width=900,
-            title=f"Komposition gewählt:\n" +
-                  ", ".join(f"{k}={target[k]:.2f}" for k in comp_cols)
-        )
-
+        g, target = get_data_slice(data_dict, kwargs)
         with out:
-            display(fig)
+            plot_composition_scheil(g, comp_cols, target, t_col, solid_col, liquid_col)
 
-    # interactive_output erzeugen
-    interactive = widgets.interactive_output(plot_update, sliders)
-
-    # Layout mit Slidern und Plot nebeneinander oder untereinander
+    interactive = widgets.interactive_output(update_plot, sliders)
     ui = widgets.VBox([*sliders.values(), out])
     display(ui, interactive)
