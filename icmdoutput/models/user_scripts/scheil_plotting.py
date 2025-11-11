@@ -1,115 +1,98 @@
+'''Module for plotting Solidification data'''
 import pandas as pd
 import plotly.express as px
 from icmdoutput.models.solidification import Solidification
 
 class Scheil(Solidification):
-
+    '''Methods to Plot Solidification Data, not useable for parameter'''
     def __init__(self, path: str, modelname: str):
         super().__init__(path, modelname)
 
-        self.temp_by_phase = self.__new_temp_by_phase()
+        self.temp_by_phase = self._compute_temp_by_phase()
 
 
-    def __get_present_phases(self, row, threshhold):
+    def _get_present_phases(self, row, threshold):
         df = self.get_phase_fraction()
-        phase_columns = [col for col in df.columns if col != 'Temperature in C' and col != 'SOLID']
-        return [phase for phase in phase_columns if row[phase]>threshhold]
+        phase_columns = [
+            col for col in df.columns
+            if col != 'Temperature in C' and col != 'SOLID'
+        ]
+        return [ph for ph in phase_columns if row[ph] > threshold]
 
-    def __new_temp_by_phase(self, threshhold = 1e-6):
-        ''' Returns a better/other Phase Region DataFrame, if the ICMD outptut is wierd '''
+    def _compute_temp_by_phase(self, threshold = 1e-6):
+        ''' Returns a better/other Phase Region DataFrame, if the ICMD output doenst seems right '''
+        phase_df = self.get_phase_fraction(parameter=False)
+        temp_df = self.get_temperatures()
 
-        phase_region = self.get_phase_fraction(parameter=False).apply(lambda row: self.__get_present_phases(row, threshhold), axis=1)
-        df_present = pd.DataFrame(
-            list(zip( self.get_temperatures()['Temperature in C'].values, phase_region.apply(lambda phase: '+'.join(sorted(phase))).values)),
-            columns=['Temperature in C', 'Phase Region']
+        present = phase_df.apply(
+            lambda r: self._get_present_phases(r, threshold),
+            axis=1
         )
-
-        return df_present
+        mapped = pd.DataFrame({
+            'Temperature in C': temp_df['Temperatere in C'].values,
+            'Phase Region': present.apply(lambda ph: '+'.join(sorted(ph)))
+        })
+        return mapped
 
     def get_temp_by_phase(self):
-
+        '''return temperature by phases'''
         return self.temp_by_phase
-    
-    def get_scheil_df(self, threshhold=1e-6):
 
-        return pd.concat([self.get_percent_solidified_molar(), self.__new_temp_by_phase(threshhold)], axis=1).iloc[:-1]
+    def get_scheil_df(self, threshold=1e-6):
+        '''Return Dataframe for Scheil plot, calulated from compute_temp_by_phase'''
+        base = self.get_percent_solidified_molar()
+        phase_info = self._compute_temp_by_phase(threshold)
+        return pd.concat([base, phase_info], axis=1).iloc[:-1]
 
-    def scheil_plot(self, tempunit = 'C', plotname='', userscript=False, threshhold= 1e-6):
+    def scheil_plot(self, temp_unit = 'C', plotname='', user_script=False, threshold= 1e-6):
         '''Returns a Plotly fig with a Scheil Plot'''
+        df = self.get_scheil_df(threshold) if user_script else self.get_data_for_scheil_plot(temp_unit)
 
-        if userscript:
-            df = self.get_scheil_df(threshhold)
-        else:
-            df = self.get_data_for_scheil_plot(tempunit)
-
-        fig = px.line(df, x='Percent solidified molar', y='Temperature in '+tempunit, color='Phase Region', title=plotname)
-        fig.update_traces(line={'width':5})
-        fig.update_layout(
-            font=dict(
-                size=18
-            ),
-            title_font=dict(
-                size=24
+        fig = px.line(
+            df,
+            x='Percent solidified molar',
+            y=f'Temperature in {temp_unit}',
+            color='Phase Region',
+            title=plotname
             )
+        fig.update_traces(line={'width': 3})
+        fig.update_layout(font={'size': 16}, title_font={'size': 22})
+        return fig
+
+    def _scheil_plot_fig(self, df, temp_col, plotname, log, y_range):
+        fig = px.line(
+            df,
+            x=temp_col,
+            y='Phase Fraction',
+            color='Phase',
+            log_y=log,
+            title=plotname
         )
 
-        return fig 
-
-    def __scheil_plot_fig_dif(self, df, temps, plotname, log, minmax):
-        fig = px.line(df,
-                      x=temps,
-                      y='Phase Fraction',
-                      color='Phase',
-                      log_y=log, title=plotname)
-
-        fig.update_traces(line={'width':3})
-        if minmax is not None:
-            fig.update_yaxes(range=minmax)
-        if log:
-            if minmax is None:
-                fig.update_yaxes(range=[-4,0])
-
+        fig.update_traces(line={'width':2})
+        if y_range:
+            fig.update_yaxes(range=y_range)
+        elif log:
+            fig.update_yaxes(range=[-4,0])
         fig.update_layout(
-            font={"size": 18},
-            title_font={"size": 24},
-            xaxis_title=temps,
-            yaxis_title= 'Phase fraction in mol'
+            font={"size": 16},
+            title_font={"size": 22},
+            xaxis_title=temp_col,
+            yaxis_title= 'Phase fraction in mole'
         )
         return fig
 
-    def scheil_step_plt(self, parameter=False, tempunit='C', plotname='', log=True, minmax=None):
+    def scheil_step_plt(self, parameter=False, temp_unit='C', plotname='', log=True, y_range=None):
         '''Plot phase fraction over Temperature'''
+        df = self.get_phase_fraction(parameter=parameter, temp_unit=temp_unit)
+        temp_col = f'Temperature in {temp_unit}'
 
-        df = self.get_phase_fraction(parameter=parameter, temp_unit=tempunit)
-        temp_col = 'Temperature in ' + tempunit
-        phase_cols = self.get_phase_names()
-        phase_cols.remove('SOLID')
-
-        phase_cols = [col for col in df.columns if col in phase_cols + [temp_col] ]
-
-        if parameter:
-            df_grouped = df.groupby(self.get_components)
-            fig_list = []
-            for comp, group in df_grouped:
-                df_long = group.melt(
-                    id_vars = [temp_col],
-                    value_vars=phase_cols,
-                    var_name='Phase',
-                    value_name='Phase Fraction'
-                )
-
-
-
+        phase_cols = [p for p in self.get_phase_names() if p != 'SOLID' and p in df.columns]
         df_long = df.melt(
             id_vars = [temp_col],
-            value_vars=phase_cols,
-            var_name='Phase',
+            value_vars = phase_cols,
+            var_name = 'Phase',
             value_name='Phase Fraction'
-        )
+        ).sort_values(temp_col)
 
-        df_long = df_long.sort_values(temp_col)
-
-        fig = self.__scheil_plot_fig_dif(df_long, temp_col, plotname=plotname, log=log, minmax=minmax)
-
-
-        return fig
+        return self._scheil_plot_fig(df_long, temp_col, plotname, log, y_range)
