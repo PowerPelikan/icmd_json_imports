@@ -8,12 +8,12 @@ The toolkit streamlines access to thermodynamic, equilibrium, and solidification
 ---
 
 ## 📁 Project Structure
-icmdoutput/
-├── json_import.py                  # Load JSON models into structured objects
-├── redundant_data.py               # Phase composition and temperature handling
-├── models/
-│   ├── solidification.py           # Solidification & Scheil analysis tools
-│   └── equilibrium.py              # Equilibrium properties (density, enthalpy, etc.)
+icmdoutput/ <br>
+├── json_import.py                  # Load JSON models into structured objects <br>
+├── redundant_data.py               # Phase composition and temperature handling <br>
+├── models/ <br>
+│   ├── solidification.py           # Solidification & Scheil analysis tools <br>
+│   └── equilibrium.py              # Equilibrium properties (density, enthalpy, etc.) <br>
 
 ---
 
@@ -89,6 +89,6 @@ pressure_df = eq.get_pressure("Pa")
 GPL-3.0 License
 
 **Maintainer**
-Jonathan Hartmann
+Jonathan Hartmann <br>
 Contributions, bug reports, and improvements are welcome.
 
