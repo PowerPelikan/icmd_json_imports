@@ -1,5 +1,92 @@
 This repository is under construction
 
-# ICMD json imports
+# ICMD Output Data Tools
 
-This libary can be used to load json files from Questeks ICMD into python dataframes to further anaylze them and doing research, which isnt possible in the main application.
+Utilities for reading, cleaning, and visualizing **ICMD JSON model output** as structured `pandas` DataFrames.  
+The toolkit streamlines access to thermodynamic, equilibrium, and solidification data for analysis and plotting.
+
+---
+
+## 📁 Project Structure
+icmdoutput/
+├── json_import.py                  # Load JSON models into structured objects
+├── redundant_data.py               # Phase composition and temperature handling
+├── models/
+│   ├── solidification.py           # Solidification & Scheil analysis tools
+│   └── equilibrium.py              # Equilibrium properties (density, enthalpy, etc.)
+
+---
+
+## ⚙️ Installation
+
+1. Clone this repository:
+
+   ```bash
+   git clone https://github.com/youruser/icmdoutput.git
+   cd icmdoutput
+   ```
+
+2. Install dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+    Typical dependencies
+
+    pandas>=2.0
+    numpy>=1.24
+    plotly>=5.0
+    pytest>=7.0
+
+## Usage examples
+
+### Reading model data
+    ```python
+    from icmdoutput.json_import import JsonData
+
+    data = JsonData("simulation.json")
+    print(data.get_models())
+    elements = data.get_elements()
+    ```
+
+### Single model access
+    ```python
+    from icmdoutput.json_import import SingleModel
+
+    model = SingleModel("simulation.json", "model1")
+    params = model.get_parameter_values()
+    ```
+
+### Phase fractions and temperature data
+    ```python
+    from icmdoutput.redundant_data import PhasesAndTemps
+
+    pt = PhasesAndTemps("simulation.json", "model1")
+    phase_fractions = pt.get_phase_fraction()
+    temperatures = pt.get_temperatures()
+    ```
+ ### Solidification and Scheil plotting
+    ```python
+    from icmdoutput.models.solidification import Solidification
+
+    solid = Solidification("simulation.json", "model1")
+    scheil_data = solid.get_data_for_scheil_plot(temp_unit="C")
+    fig = solid.scheil_plot(plotname="Scheil Solidification")
+    fig.show()
+    ```
+
+### Equilibrium properties
+    ```python
+    from icmdoutput.models.equilibrium import Equilibrium
+
+    eq = Equilibrium("simulation.json", "model1")
+    density_df = eq.get_system_density()
+    pressure_df = eq.get_pressure("Pa")
+    ```
+**License**
+GPL-3.0 License
+
+**Maintainer**
+Jonathan Hartmann
+Contributions, bug reports, and improvements are welcome.
+
