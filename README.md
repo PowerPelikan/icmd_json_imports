@@ -47,7 +47,7 @@ icmdoutput/
     data = JsonData("simulation.json")
     print(data.get_models())
     elements = data.get_elements()
-    ```
+    
 
 ### Single model access
     ```python
@@ -55,7 +55,7 @@ icmdoutput/
 
     model = SingleModel("simulation.json", "model1")
     params = model.get_parameter_values()
-    ```
+    
 
 ### Phase fractions and temperature data
     ```python
@@ -64,7 +64,7 @@ icmdoutput/
     pt = PhasesAndTemps("simulation.json", "model1")
     phase_fractions = pt.get_phase_fraction()
     temperatures = pt.get_temperatures()
-    ```
+    
  ### Solidification and Scheil plotting
     ```python
     from icmdoutput.models.solidification import Solidification
@@ -73,7 +73,7 @@ icmdoutput/
     scheil_data = solid.get_data_for_scheil_plot(temp_unit="C")
     fig = solid.scheil_plot(plotname="Scheil Solidification")
     fig.show()
-    ```
+    
 
 ### Equilibrium properties
     ```python
@@ -82,7 +82,7 @@ icmdoutput/
     eq = Equilibrium("simulation.json", "model1")
     density_df = eq.get_system_density()
     pressure_df = eq.get_pressure("Pa")
-    ```
+    
 **License**
 GPL-3.0 License
 
