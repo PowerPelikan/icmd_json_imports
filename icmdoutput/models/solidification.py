@@ -1,51 +1,51 @@
 """ Importing Solidification-Model data from json in Pandas Dataframes"""
 import pandas as pd
 import numpy as np
-from icmdoutput.redunant_data import PhasesAndTemps
+from icmdoutput.redundant_data import PhasesAndTemps
+
 
 class Solidification(PhasesAndTemps):
-    ''' Soldification data of a json'''
+    """Solidification data of a JSON model."""
 
-    def __get_solid_reg(self):
-        return self.data['coords']['solidification_region']['data']
+    # --- Internal getters --------------------------------------------------
 
-    def __get_temp_reg(self):
-        return self.data['data_vars']['temperature_by_phase_region']['data']
+    def _get_solid_regions(self):
+        return self.data["coords"]["solidification_region"]["data"]
+
+    def _get_temp_regions(self):
+        return self.data["data_vars"]["temperature_by_phase_region"]["data"]
+
+    def _get_percent_solid_molar(self):
+        return self.data["data_vars"]["percent_solidified_molar_values"]["data"][0]
+
+    # --- Public methods ----------------------------------------------------
+
+    def get_solid_regions(self) -> pd.DataFrame:
+        """Return calculated solidification regions."""
+        return pd.DataFrame(self._get_solid_regions(), columns=["Phase Region"])
+
+    def get_temperature_by_phase_region(self, unit="C") -> pd.DataFrame:
+        """Return temperature by phase region."""
+        idx = {"C": 0, "F": 1, "K": 2}.get(unit)
+        if idx is None:
+            raise ValueError(f"Unsupported temperature unit: '{unit}'")
+
+        data = np.array(self._get_temp_regions())[0, :, :, idx]
+        return pd.DataFrame(data, columns=self._get_solid_regions())
+
+    def get_percent_solidified_molar(self) -> pd.DataFrame:
+        """Return percentage of solidification."""
+        return pd.DataFrame(self._get_percent_solid_molar(), columns=["Percent solidified molar"])
+
+    def get_data_for_scheil_plot(self, temp_unit="C") -> pd.DataFrame:
+        """Return DataFrame suitable for Scheil plot construction."""
+        phase_region = self.get_temperature_by_phase_region(unit=temp_unit)
+        melted = (
+            phase_region.melt(var_name="Phase Region", value_name=f"Temperature in {temp_unit}")
+            .dropna(subset=[f"Temperature in {temp_unit}"])
+            .sort_values(by=f"Temperature in {temp_unit}")
+            .reset_index(drop=True)
+        )
+        df = self.get_percent_solidified_molar()
+        return pd.concat([df, melted], axis=1, join="inner")
     
-    def __get_perc_sol_mol(self):
-        return self.data['data_vars']['percent_solidified_molar_values']['data'][0]
-
-    def get_sold_reg(self):
-        ''' Return calculated solidification region'''
-        return pd.DataFrame(self.__get_solid_reg())
-
-    def get_temperature_by_phase_region(self, unit = 'C'):
-        """ Return Temperature by phase region values"""
-
-        match unit:
-            case 'C':
-                temperature_values = np.array(self.__get_temp_reg())[0,:,:,0]
-            case 'F':
-                temperature_values = np.array(self.__get_temp_reg())[0,:,:,1]
-            case 'K':
-                temperature_values = np.array(self.__get_temp_reg())[0,:,:,2]
-
-        return pd.DataFrame(temperature_values, columns=self.__get_solid_reg())
-
-    def get_percent_solidified_molar(self):
-        ''' Return Percetage of solidification'''
-
-        return pd.DataFrame(self.__get_perc_sol_mol(), columns=['Percent solidified molar'])
-
-    def get_data_for_scheil_plot(self, tempunit='C'):
-        '''Return Dataframe with percent_solidified_molar and temperature_by_phase_region data sorted in a dataframe'''
-
-        phase_region = self.get_temperature_by_phase_region(unit=tempunit)
-        
-        #melt and clean it in a better dataframe
-        pr_melted = phase_region.melt(var_name='Phase Region', value_name='Temperature in '+tempunit)
-        pr_clean = pr_melted.dropna(subset=['Temperature in '+tempunit])
-        pr_clean = pr_clean[['Temperature in '+tempunit, 'Phase Region']]
-        pr_clean = pr_clean.sort_values(by='Temperature in '+tempunit).reset_index(drop=True)
-
-        return pd.concat([self.get_percent_solidified_molar(), pr_clean], axis = 1)

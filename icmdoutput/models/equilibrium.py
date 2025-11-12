@@ -1,161 +1,132 @@
 import pandas as pd
 import numpy as np
-from icmdoutput.redunant_data import PhasesAndTemps
+from icmdoutput.redundant_data import PhasesAndTemps
+
 
 class Equilibrium(PhasesAndTemps):
-    '''Get data from Equilibrium model'''
+    """Access equilibrium model data such as density, enthalpy, viscosity, etc."""
 
-    def __get__molar_volume(self):
-        return np.array(
-            self.data['data_vars']['molar_volume']['data']
-            )[0,:]
-    
-    def __get_system_desity(self):
-        return self.data['data_vars']['system_density']['data']
-    
-    def __get_density(self):
-        return self.data['data_vars']['density']['data'][0]
+    # --- Internal data extraction helpers ----------------------------------
 
-    def __get_pressure(self):
-        return self.data['data_vars']['pressure']['data']
-    
-    def __get_thermal_conductivity(self):
-        return self.data['data_vars']['thermal_conductivity']['data'][0]
-    
-    def __get_system_size_mass(self):
-        return self.data['data_vars']['system_size_mass']['data']
-    
-    def __get_system_size_moles(self):
-        return self.data['data_vars']['system_size_moles']['data']
-    
-    def __get_system_size_volume(self):
-        return self.data['data_vars']['system_size_volume']['data']
-    
-    def __get_system_enthalpy(self):
-        return self.data['data_vars']['system_enthalpy']['data']
-    
-    def __get_enthalpy(self):
-        return self.data['data_vars']['enthalpy']['data'][0]
+    def _get_array(self, *path, index=None):
+        """Safely navigate nested keys and optionally extract index."""
+        data = self.data
+        for p in path:
+            data = data[p]
+        arr = np.array(data)
+        if index is not None:
+            return arr[index]
+        return arr
 
-    def __get_system_electrical_resistivity(self):
-        return self.data['data_vars']['system_electrical_resistivity']['data']
-    
-    def __get_electrical_resistivity(self):
-        return self.data['data_vars']['electrical_resistivity']['data'][0]
+    # --- Individual variables ----------------------------------------------
 
-    
-    def __get_surface_tension(self):
-        return self.data['data_vars']['surface_tension']['data'][0]
-    
-    def __get_dynamic_viscosity(self):
-        return self.data['data_vars']['dynamic_viscosity']['data'][0]
-    
-    def __get_tracer_diffusion_coefficient(self):
-        return self.data['data_vars']['tracer_diffusion_coefficient']['data'][0]
+    def _get_molar_volume(self):
+        return self._get_array("data_vars", "molar_volume", "data", index=0)
 
-    def __get_chemical_diffusion_coefficient(self):
-        return self.data['data_vars']['chemical_diffusion_coefficient']['data'][0]
+    def _get_system_density(self):
+        return self._get_array("data_vars", "system_density", "data")
+
+    def _get_density(self):
+        return self._get_array("data_vars", "density", "data", index=0)
+
+    def _get_pressure(self):
+        return self._get_array("data_vars", "pressure", "data")
+
+    def _get_thermal_conductivity(self):
+        return self._get_array("data_vars", "thermal_conductivity", "data", index=0)
+
+    def _get_system_size(self, key):
+        return self._get_array("data_vars", key, "data")
+
+    def _get_enthalpy(self):
+        return self._get_array("data_vars", "enthalpy", "data", index=0)
+
+    def _get_system_enthalpy(self):
+        return self._get_array("data_vars", "system_enthalpy", "data")
+
+    def _get_electrical_resistivity(self):
+        return self._get_array("data_vars", "electrical_resistivity", "data", index=0)
+
+    def _get_system_electrical_resistivity(self):
+        return self._get_array("data_vars", "system_electrical_resistivity", "data")
+
+    def _get_surface_tension(self):
+        return self._get_array("data_vars", "surface_tension", "data", index=0)
+
+    def _get_dynamic_viscosity(self):
+        return self._get_array("data_vars", "dynamic_viscosity", "data", index=0)
+
+    def _get_tracer_diffusion_coefficient(self):
+        return self._get_array("data_vars", "tracer_diffusion_coefficient", "data", index=0)
+
+    def _get_chemical_diffusion_coefficient(self):
+        return self._get_array("data_vars", "chemical_diffusion_coefficient", "data", index=0)
+
+    # --- Public accessors returning DataFrames -----------------------------
 
     def get_molar_volume(self):
-        '''Return molar volume from all phases as dataframe'''
+        phases = self.get_phase_names_df().squeeze()
+        return pd.DataFrame([self._get_molar_volume()], columns=phases)
 
-        phaselist = np.array(self.get_phase_names_df())[:,0]
-        return pd.DataFrame([self.__get__molar_volume()], columns=phaselist) 
-    
-    def get_system_desnity(self):
-        '''Return system density in a dataframe'''
+    def get_system_density(self):
+        return pd.DataFrame(self._get_system_density(), columns=["System density (g/cm³)"])
 
-        return pd.DataFrame(self.__get_system_desity(), columns=['g/cm^3'])
-        
     def get_density(self):
-        '''Return denstity of the phases'''
+        phases = self.get_phase_names_df().squeeze()
+        return pd.DataFrame([self._get_density()], columns=phases)
 
-        phaselist = self.get_phase_names_df().values[:,0]
-        return pd.DataFrame([self.__get_density()], columns=phaselist)
-
-    def get_pressure(self, unit='Pa'):
-        '''Return pressure as a Dataframe'''
-        
-        match unit:
-            case 'Pa':
-                return pd.DataFrame([np.array(
-                    self.__get_pressure())[0,0]], columns=['Pressure in Pa'])
-            case 'ksi':
-                return pd.DataFrame([np.array(
-                    self.__get_pressure())[0,1]], columns=['Pressure in ksi'])
-            case 'atm': 
-                return pd.DataFrame([np.array(
-                    self.__get_pressure())[0,2]], columns=['Pressure in atm'])
-            case 'bar': 
-                return pd.DataFrame([np.array(
-                    self.__get_pressure())[0,3]], columns=['Pressure in bar'])
+    def get_pressure(self, unit="Pa"):
+        pressure_map = {"Pa": 0, "ksi": 1, "atm": 2, "bar": 3}
+        if unit not in pressure_map:
+            raise ValueError(f"Unsupported pressure unit: {unit}")
+        val = self._get_pressure()[0, pressure_map[unit]]
+        return pd.DataFrame([[val]], columns=[f"Pressure ({unit})"])
 
     def get_thermal_conductivity(self):
-        '''Returns a Dataframe with the thermal conductivity of all phases'''
-
-        phaselist = self.get_phase_names_df().values[:,0]
-        return pd.DataFrame([self.__get_thermal_conductivity()], columns=phaselist)
+        phases = self.get_phase_names_df().squeeze()
+        return pd.DataFrame([self._get_thermal_conductivity()], columns=phases)
 
     def get_system_size_mass(self):
-        '''Return system size mass in dataframe'''
+        return pd.DataFrame(self._get_system_size("system_size_mass"), columns=["Mass (g)"])
 
-        return pd.DataFrame(self.__get_system_size_mass(), columns=['System size mass in g'])
-        
     def get_system_size_moles(self):
-        '''Return system size moles in dataframe'''
-
-        return pd.DataFrame(self.__get_system_size_moles(), columns=['System size moles in mol'])
+        return pd.DataFrame(self._get_system_size("system_size_moles"), columns=["Moles (mol)"])
 
     def get_system_size_volume(self):
-        '''Return system size volume in dataframe'''
-
-        return pd.DataFrame(self.__get_system_size_volume(), columns=['System size volume in m^3'])
+        return pd.DataFrame(self._get_system_size("system_size_volume"), columns=["Volume (m³)"])
 
     def get_system_enthalpy(self):
-        '''Return system enthalpy in dataframe'''
-
-        return pd.DataFrame(self.__get_system_enthalpy(), columns=['System enthalpy in J'])
+        return pd.DataFrame(self._get_system_enthalpy(), columns=["System enthalpy (J)"])
 
     def get_enthalpy(self):
-        '''Returns a Dataframe with the enthalpy of all phases'''
-
-        phaselist = self.get_phase_names_df().values[:,0]
-        return pd.DataFrame([self.__get_enthalpy()],columns=phaselist)
+        phases = self.get_phase_names_df().squeeze()
+        return pd.DataFrame([self._get_enthalpy()], columns=phases)
 
     def get_system_electrical_resistivity(self):
-        '''Return a datafarme with system electrical resistivity '''
-
-        return pd.DataFrame(self.__get_system_electrical_resistivity(), columns=['System electrical resistivity in Ohm m'])
+        return pd.DataFrame(
+            self._get_system_electrical_resistivity(),
+            columns=["System resistivity (Ω·m)"],
+        )
 
     def get_electrical_resistivity(self):
-        '''Returns a Dataframe with the electrical resisitivity of all phases'''
-
-        phaselist = self.get_phase_names_df().values[:,0]
-        return pd.DataFrame([self.__get_electrical_resistivity()],columns=phaselist)
+        phases = self.get_phase_names_df().squeeze()
+        return pd.DataFrame([self._get_electrical_resistivity()], columns=phases)
 
     def get_surface_tension(self):
-        '''Returns a Dataframe with the electrical resisitivity of all phases'''
-
-        phaselist = self.get_phase_names_df().values[:,0]
-        return pd.DataFrame([self.__get_surface_tension()],columns=phaselist)
+        phases = self.get_phase_names_df().squeeze()
+        return pd.DataFrame([self._get_surface_tension()], columns=phases)
 
     def get_dynamic_viscosity(self):
-        '''Returns a Dataframe with the dynamic viscosity of all phases'''
-
-        phaselist = self.get_phase_names_df().values[:,0]
-        return pd.DataFrame([self.__get_dynamic_viscosity()],columns=phaselist)
+        phases = self.get_phase_names_df().squeeze()
+        return pd.DataFrame([self._get_dynamic_viscosity()], columns=phases)
 
     def get_tracer_diffusion_coefficient(self):
-        '''Returns a dataframe with dynamic viscosity over all phases and elements'''
+        phases = self.get_phase_names_df().squeeze()
+        elements = self.get_elements().squeeze()
+        return pd.DataFrame(self._get_tracer_diffusion_coefficient(), index=phases, columns=elements)
 
-        phaselist = self.get_phase_names_df().values[:,0]
-        elements = self.get_elements().values[:,0]
-        tdc = self.__get_tracer_diffusion_coefficient()
-        return pd.DataFrame(tdc, index=phaselist, columns=elements)
+    def get_chemical_diffusion_coefficient(self):
+        phases = self.get_phase_names_df().squeeze()
+        gradients = self.get_gradient_component().squeeze()
+        return pd.DataFrame(self._get_chemical_diffusion_coefficient(), index=phases, columns=gradients)
     
-    def get_chemical_diffusion_coefficent(self):
-
-        phaselist = self.get_phase_names_df().values[:,0]
-        gradient_components = self.get_gradient_component().values[:,0]
-
-        return pd.DataFrame(self.__get_chemical_diffusion_coefficient(), columns=gradient_components, index=phaselist)

@@ -5,7 +5,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from icmdoutput import json_import
 from icmdoutput.models.solidification import Solidification
-from icmdoutput.redunant_data import PhasesAndTemps
+from icmdoutput.redundant_data import PhasesAndTemps
 from icmdoutput.models.equilibrium import Equilibrium
 from icmdoutput.models.tempearture_step import TemperatureStep
 
@@ -14,12 +14,12 @@ if __name__ == '__main__':
     data1 = json_import.JsonData('test/testfiles/susair-var_ni_cu.json')
     data2 = json_import.JsonData('test/testfiles/tesla_tempStep_solidif.json')
 
-    print(data1.get_model())
-    print(data2.get_model())
+    print(data1._extract_models())
+    print(data2._extract_models())
     print(data2.get_datakeys_of_models())
 
     sol = Solidification('test/testfiles/tesla_tempStep_solidif.json', 'Solidification')
-    print(sol.get_sold_reg())
+    print(sol.get_solid_regions())
     print(sol.get_phase_fraction())
     print(sol.get_temperature_by_phase_region())
     print(sol.get_percent_solidified_molar())
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     print(equi.get_dynamic_viscosity())
     print(equi.get_tracer_diffusion_coefficient())
     print(equi.get_gradient_component().values[:,0])
-    print(equi.get_chemical_diffusion_coefficent())
+    #print(equi.get_chemical_diffusion_coefficient())
 
     tempStep = TemperatureStep('test/testfiles/tesla_tempStep_solidif.json', 'Temperature Step')
     print(tempStep.get_phase_fraction())
