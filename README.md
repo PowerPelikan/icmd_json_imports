@@ -15,8 +15,8 @@ icmdoutput/ <br>
 │   ├── solidification.py           # Solidification & Scheil analysis tools <br>
 │   └── equilibrium.py              # Equilibrium properties (density, enthalpy, etc.) <br>
 │   ├── user_scripts <br>
-│       ├── interactive_plots.py        # Work in progress making interactive plots for parameter studies <br>
-│       └── scheil_plotting.py          # Funktions to direct pltting Scheil data, fixing bugs icmd data has <br>
+│   │   ├── interactive_plots.py        # Work in progress making interactive plots for parameter studies <br>
+│   │   └── scheil_plotting.py          # Funktions to direct pltting Scheil data, fixing bugs icmd data has <br>
 
 ---
 
