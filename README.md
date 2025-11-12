@@ -41,48 +41,50 @@ icmdoutput/
 ## Usage examples
 
 ### Reading model data
-    ```python
-    from icmdoutput.json_import import JsonData
+```python
+from icmdoutput.json_import import JsonData
 
-    data = JsonData("simulation.json")
-    print(data.get_models())
-    elements = data.get_elements()
-    
+data = JsonData("simulation.json")
+print(data.get_models())
+elements = data.get_elements()
+``` 
 
 ### Single model access
-    ```python
-    from icmdoutput.json_import import SingleModel
+```python
+from icmdoutput.json_import import SingleModel
 
-    model = SingleModel("simulation.json", "model1")
-    params = model.get_parameter_values()
-    
+model = SingleModel("simulation.json", "model1")
+params = model.get_parameter_values()
+```    
 
 ### Phase fractions and temperature data
-    ```python
-    from icmdoutput.redundant_data import PhasesAndTemps
+```python
+from icmdoutput.redundant_data import PhasesAndTemps
 
-    pt = PhasesAndTemps("simulation.json", "model1")
-    phase_fractions = pt.get_phase_fraction()
-    temperatures = pt.get_temperatures()
+pt = PhasesAndTemps("simulation.json", "model1")
+phase_fractions = pt.get_phase_fraction()
+temperatures = pt.get_temperatures()
+```
     
  ### Solidification and Scheil plotting
-    ```python
-    from icmdoutput.models.solidification import Solidification
+```python
+from icmdoutput.models.solidification import Solidification
 
-    solid = Solidification("simulation.json", "model1")
-    scheil_data = solid.get_data_for_scheil_plot(temp_unit="C")
-    fig = solid.scheil_plot(plotname="Scheil Solidification")
-    fig.show()
-    
+solid = Solidification("simulation.json", "model1")
+scheil_data = solid.get_data_for_scheil_plot(temp_unit="C")
+fig = solid.scheil_plot(plotname="Scheil Solidification")
+fig.show()
+``` 
 
 ### Equilibrium properties
-    ```python
-    from icmdoutput.models.equilibrium import Equilibrium
+```python
+from icmdoutput.models.equilibrium import Equilibrium
 
-    eq = Equilibrium("simulation.json", "model1")
-    density_df = eq.get_system_density()
-    pressure_df = eq.get_pressure("Pa")
-    
+eq = Equilibrium("simulation.json", "model1")
+density_df = eq.get_system_density()
+pressure_df = eq.get_pressure("Pa")
+```
+
 **License**
 GPL-3.0 License
 
