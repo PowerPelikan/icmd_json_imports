@@ -88,6 +88,15 @@ density_df = eq.get_system_density()
 pressure_df = eq.get_pressure("Pa")
 ```
 
+### Scheil plots
+```python
+from icmdoutput.models.plotting.scheil_plot import Scheil
+
+scheil = Scheil("simulation.json", "model1")
+fig = scheil.scheil_plot(plotname="Scheil Solidification")
+fig.show()
+```
+
 **License**
 GPL-3.0 License
 
