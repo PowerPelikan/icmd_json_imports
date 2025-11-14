@@ -174,7 +174,10 @@ cython_debug/
 .pypirc
 
 # Testfiles
-/test/testfiles
+/tests/testfiles
+/tests/testfiles/*
+/tests/json_import_test_copy.py
+/tests/json_import_test.py
 
 /jupyterNotebooks
 /jupyterNotebooks/*
