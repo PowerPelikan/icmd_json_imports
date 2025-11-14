@@ -1,5 +1,5 @@
 import json
-from icmdoutput.models.plotting.scheil_plot import Scheil
+from icmdoutput.models.user_scripts.scheil_plotting import Scheil
 
 def test_scheil_plot_builds(tmp_path, mock_json_data):
     f = tmp_path / "mock.json"
