@@ -28,14 +28,18 @@ class JsonData:
         return list(self.data.get("models", {}).keys())
 
     def _extract_elements(self) -> pd.DataFrame:
-        """Return a list of all used elements"""
-        rows = []
+        """Return components per model; gracefully handle missing or uneven data."""
+        results = {}
+
         for model in self._extract_models():
             try:
-                rows.append(self.data['models'][model]['coords']['component']['data'])
+                elements = self.data["models"][model]["coords"]["component"]["data"]
+                results[model] = elements
             except KeyError:
-                print(f"Faild to extract elements for model '{model}'")
-        return pd.DataFrame(rows, index=self._extract_models()).T
+                results[model] = []
+            
+        df = pd.Series(results, name="Elements").to_frame()
+        return df
 
 
     def _extract_datakeys(self) -> pd.DataFrame:
